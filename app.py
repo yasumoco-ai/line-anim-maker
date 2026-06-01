@@ -61,9 +61,13 @@ with col2:
     )
     use_crop = fit_mode.startswith("トリミング")
 
-bg_color_hex = st.color_picker("余白の背景色（letterboxのとき）", "#FFFFFF")
-bg_rgb = tuple(int(bg_color_hex[i:i+2], 16) for i in (1, 3, 5))
-bg_color = bg_rgb + (255,)
+use_transparent = st.checkbox("余白を透明にする", value=False)
+if not use_transparent:
+    bg_color_hex = st.color_picker("余白の背景色（letterboxのとき）", "#FFFFFF")
+    bg_rgb = tuple(int(bg_color_hex[i:i+2], 16) for i in (1, 3, 5))
+    bg_color = bg_rgb + (255,)
+else:
+    bg_color = (0, 0, 0, 0)
 
 
 def resize_frame(img: Image.Image) -> Image.Image:
