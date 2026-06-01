@@ -125,9 +125,15 @@ st.markdown("### 4. APNG生成")
 if st.button("🚀 APNG を生成する", type="primary", use_container_width=True):
     frames = [resize_frame(img) for img in frames_raw]
 
-    # 色数削減
+    # 色数削減（RGBA→RGB量子化→RGBA復元でアルファ保持）
     if reduce_colors:
-        frames = [f.quantize(colors=256, method=Image.Quantize.MEDIANCUT).convert("RGBA") for f in frames]
+        reduced = []
+        for f in frames:
+            r, g, b, a = f.split()
+            rgb = Image.merge("RGB", (r, g, b)).quantize(colors=256).convert("RGB")
+            rr, rg, rb = rgb.split()
+            reduced.append(Image.merge("RGBA", (rr, rg, rb, a)))
+        frames = reduced
 
     # APNG保存
     buf = io.BytesIO()
