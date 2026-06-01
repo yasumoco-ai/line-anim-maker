@@ -69,6 +69,21 @@ if not use_transparent:
 else:
     bg_color = (0, 0, 0, 0)
 
+st.markdown("**ファイルサイズ削減**")
+col3, col4 = st.columns(2)
+with col3:
+    compress_level = st.slider(
+        "PNG圧縮レベル",
+        min_value=1, max_value=9, value=6,
+        help="数値が大きいほどファイルが小さくなります（処理は少し遅くなります）"
+    )
+with col4:
+    reduce_colors = st.checkbox(
+        "色数を256色に減らす",
+        value=False,
+        help="ファイルサイズが大幅に小さくなりますが、グラデーションが荒くなる場合があります"
+    )
+
 
 def resize_frame(img: Image.Image) -> Image.Image:
     """320×270にリサイズ。cropモードはトリミング、letterboxは余白追加。"""
@@ -110,6 +125,10 @@ st.markdown("### 4. APNG生成")
 if st.button("🚀 APNG を生成する", type="primary", use_container_width=True):
     frames = [resize_frame(img) for img in frames_raw]
 
+    # 色数削減
+    if reduce_colors:
+        frames = [f.quantize(colors=256, method=Image.Quantize.MEDIANCUT).convert("RGBA") for f in frames]
+
     # APNG保存
     buf = io.BytesIO()
     frames[0].save(
@@ -119,6 +138,7 @@ if st.button("🚀 APNG を生成する", type="primary", use_container_width=Tr
         append_images=frames[1:],
         loop=0,
         duration=duration_ms,
+        compress_level=compress_level,
     )
     apng_bytes = buf.getvalue()
     size_kb = len(apng_bytes) / 1024
@@ -126,14 +146,14 @@ if st.button("🚀 APNG を生成する", type="primary", use_container_width=Tr
     # tab.png
     tab_img = frames[0].resize((TAB_W, TAB_H), Image.LANCZOS)
     tab_buf = io.BytesIO()
-    tab_img.save(tab_buf, format="PNG")
+    tab_img.save(tab_buf, format="PNG", compress_level=compress_level)
     tab_bytes = tab_buf.getvalue()
 
-    # サイズ警告
+    # サイズ表示
     if size_kb > MAX_KB:
         st.warning(
             f"⚠️ ファイルサイズが {size_kb:.1f}KB です。"
-            f"LINE申請の上限は{MAX_KB}KBなので、フレーム数を減らすか画像を圧縮してください。"
+            f"LINE申請の上限は{MAX_KB}KBなので、圧縮レベルを上げるか色数削減を試してください。"
         )
     else:
         st.success(f"✅ 生成完了！ファイルサイズ：{size_kb:.1f}KB（上限{MAX_KB}KB）")
